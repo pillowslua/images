@@ -1,2 +1,2 @@
-# crackduo
-Cracking AutoDuo key!
+CrackDuo is the best tool to cracking AutoDuo key 
+--FOR FREE!
