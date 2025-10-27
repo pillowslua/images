@@ -1,0 +1,2056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TwiskGPT - tw1sk</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --error-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --bg-chat: #ffffff;
+            --bg-modal: rgba(255, 255, 255, 0.95);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --border-color: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.18);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-chat: #0f172a;
+            --bg-modal: rgba(15, 23, 42, 0.95);
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-color: #334155;
+            --border-light: #1e293b;
+            --glass-bg: rgba(15, 23, 42, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Rate Limit Indicator */
+        .rate-limit-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .rate-limit-bar {
+            width: 100px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .rate-limit-progress {
+            height: 100%;
+            background: var(--primary-gradient);
+            transition: width 0.3s ease;
+        }
+
+        .rate-limit-warning {
+            background: var(--error-gradient);
+            color: white;
+            border: none;
+        }
+
+        /* Glassmorphism Background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-gradient);
+            opacity: 0.03;
+            z-index: -1;
+            background-size: 50px 50px;
+            background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.2) 2%, transparent 2%);
+        }
+
+        /* Auth Modal */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .auth-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .auth-modal {
+            background: var(--bg-modal);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-xl);
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .auth-overlay.active .auth-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            margin: 0 auto 16px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 16px;
+            background: var(--bg-chat);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .auth-btn {
+            padding: 16px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-secondary);
+        }
+
+        .auth-switch button {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 100;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            margin-bottom: 16px;
+        }
+
+        .logo img {
+            width: 36px;
+            height: 36px;
+            margin-right: 12px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .logo-text {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            margin-top: 8px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 12px;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .user-plan {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 24px;
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .nav-item i {
+            margin-right: 12px;
+            width: 18px;
+            text-align: center;
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 16px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-chat);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        .mode-btn.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .mode-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .mode-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .mode-btn.active .mode-name {
+            color: #667eea;
+        }
+
+        /* Language Selector */
+        .language-selector {
+            margin-top: 20px;
+        }
+
+        .language-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-chat);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-chat);
+            position: relative;
+        }
+
+        .main-header {
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 50;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            margin-right: 16px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-gradient);
+            margin-left: 12px;
+            animation: pulse 2s infinite;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-btn {
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .header-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .welcome-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-xl);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .welcome-title {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .welcome-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            padding: 24px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .feature-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Messages */
+        .message {
+            display: flex;
+            margin-bottom: 32px;
+            animation: messageSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            margin-right: 16px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-md);
+        }
+
+        .message.user .message-avatar {
+            order: 2;
+            margin-right: 0;
+            margin-left: 16px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 20px 24px;
+            border-radius: 20px;
+            font-size: 15px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: var(--primary-gradient);
+            color: white;
+            border-bottom-right-radius: 8px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .message.ai .message-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            border-bottom-left-radius: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        .message.ai .message-time {
+            text-align: left;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 32px;
+        }
+
+        .typing-content {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            border-bottom-left-radius: 8px;
+            margin-left: 16px;
+        }
+
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 24px 32px 32px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-light);
+        }
+
+        .input-container {
+            position: relative;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .input-wrapper {
+            position: relative;
+            background: var(--bg-chat);
+            border: 2px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 20px 120px 20px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            min-height: 60px;
+            max-height: 200px;
+        }
+
+        .message-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .input-actions {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .attachment-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .attachment-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .send-btn {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            transform: translateX(100%);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1001;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--success-gradient);
+            color: white;
+            border: none;
+        }
+
+        .notification.error {
+            background: var(--error-gradient);
+            color: white;
+            border: none;
+        }
+
+        .notification.warning {
+            background: var(--warning-gradient);
+            color: white;
+            border: none;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                height: 100vh;
+                z-index: 1000;
+                background: var(--bg-modal);
+                backdrop-filter: blur(20px);
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .main-header {
+                padding: 16px 20px;
+            }
+
+            .chat-container {
+                padding: 20px 16px;
+            }
+
+            .input-area {
+                padding: 16px;
+            }
+
+            .message-content {
+                max-width: 85%;
+                padding: 16px 20px;
+            }
+
+            .rate-limit-indicator {
+                top: 70px;
+                right: 16px;
+                font-size: 11px;
+                padding: 8px 12px;
+            }
+
+            .rate-limit-bar {
+                width: 80px;
+            }
+        }
+
+        /* Overlay for mobile sidebar */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-8px);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <!-- Rate Limit Indicator -->
+    <div class="rate-limit-indicator" id="rate-limit-indicator">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-tachometer-alt"></i>
+            <span id="rate-limit-text">Requests: 0/500</span>
+        </div>
+        <div class="rate-limit-bar">
+            <div class="rate-limit-progress" id="rate-limit-progress" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-modal">
+            <div class="auth-header">
+                <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=60&h=60&fit=crop&crop=smart" alt="TwiskGPT" class="auth-logo">
+                <h2 class="auth-title" id="auth-title">Welcome to TwiskGPT Pro</h2>
+                <p class="auth-subtitle" id="auth-subtitle">Sign in to access advanced AI features</p>
+            </div>
+            <form class="auth-form" id="auth-form">
+                <div class="form-group" id="name-group" style="display: none;">
+                    <input type="text" class="form-input" placeholder="Full Name" id="name-input">
+                </div>
+                <div class="form-group">
+                    <input type="email" class="form-input" placeholder="Email Address" id="email-input" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" class="form-input" placeholder="Password" id="password-input" required>
+                </div>
+                <button type="submit" class="auth-btn" id="auth-submit">Sign In</button>
+            </form>
+            <div class="auth-switch">
+                <span id="auth-switch-text">Don't have an account?</span>
+                <button type="button" id="auth-switch-btn">Sign Up</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="#" class="logo">
+                    <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=36&h=36&fit=crop&crop=smart" alt="TwiskGPT">
+                    <span class="logo-text">TwiskGPT Pro</span>
+                </a>
+                <div class="user-info" id="user-info" style="display: none;">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">User</div>
+                        <div class="user-plan">Free Plan</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-title">AI Modes</div>
+                    <div class="mode-selector">
+                        <div class="mode-btn active" data-mode="creative">
+                            <span class="mode-icon">🎨</span>
+                            <div class="mode-name">Creative</div>
+                        </div>
+                        <div class="mode-btn" data-mode="analytical">
+                            <span class="mode-icon">📊</span>
+                            <div class="mode-name">Analytical</div>
+                        </div>
+                        <div class="mode-btn" data-mode="coding">
+                            <span class="mode-icon">💻</span>
+                            <div class="mode-name">Coding</div>
+                        </div>
+                        <div class="mode-btn" data-mode="study">
+                            <span class="mode-icon">📚</span>
+                            <div class="mode-name">Study</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Language</div>
+                    <div class="language-selector">
+                        <select class="language-select" id="language-select">
+                            <option value="en">🇺🇸 English</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="de">🇩🇪 Deutsch</option>
+                            <option value="it">🇮🇹 Italiano</option>
+                            <option value="pt">🇧🇷 Português</option>
+                            <option value="ru">🇷🇺 Русский</option>
+                            <option value="zh">🇨🇳 中文</option>
+                            <option value="ja">🇯🇵 日本語</option>
+                            <option value="ko">🇰🇷 한국어</option>
+                            <option value="ar">🇸🇦 العربية</option>
+                            <option value="hi">🇮🇳 हिन्दी</option>
+                            <option value="vi">🇻🇳 Tiếng Việt</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Navigation</div>
+                    <div class="nav-item active" onclick="startNewChat()">
+                        <i class="fas fa-plus"></i>
+                        New Chat
+                    </div>
+                    <div class="nav-item" onclick="toggleTheme()">
+                        <i class="fas fa-palette" id="theme-icon"></i>
+                        <span id="theme-text">Dark Mode</span>
+                    </div>
+                    <div class="nav-item" onclick="showSettings()">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Account</div>
+                    <div class="nav-item" id="auth-nav" onclick="showAuth()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
+                    </div>
+                    <div class="nav-item" id="logout-nav" onclick="logout()" style="display: none;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Sign Out
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="chat-title">
+                        TwiskGPT Pro Assistant
+                        <span class="status-indicator"></span>
+                    </h1>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="exportChat()" title="Export Chat">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="header-btn" onclick="shareChat()" title="Share Chat">
+                        <i class="fas fa-share"></i>
+                    </button>
+                    <button class="header-btn" onclick="clearChat()" title="Clear Chat">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-container" id="chat-container">
+                <div class="welcome-screen" id="welcome-screen">
+                    <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=80&h=80&fit=crop&crop=smart" alt="TwiskGPT" class="welcome-logo">
+                    <h1 class="welcome-title">Hello, I'm TwiskGPT Pro</h1>
+                    <p class="welcome-subtitle">Advanced AI assistant powered by TW1SK API with multiple specialized modes and multilingual support. Choose a mode and language, then let's get started!</p>
+                    <div class="welcome-features">
+                        <div class="feature-card">
+                            <div class="feature-icon">🎨</div>
+                            <div class="feature-title">Creative Mode</div>
+                            <div class="feature-desc">Stories, poems, creative writing, and artistic ideas</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-title">Analytical Mode</div>
+                            <div class="feature-desc">Data analysis, research, and logical reasoning</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">💻</div>
+                            <div class="feature-title">Coding Mode</div>
+                            <div class="feature-desc">Programming help, debugging, and code review</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📚</div>
+                            <div class="feature-title">Study Mode</div>
+                            <div class="feature-desc">Learning assistance, explanations, and tutoring</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🌍</div>
+                            <div class="feature-title">Multilingual</div>
+                            <div class="feature-desc">Support for 13+ languages with native understanding</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">⚡</div>
+                            <div class="feature-title">Tw1sk Powered</div>
+                            <div class="feature-desc">Lightning-fast responses with advanced AI models</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea class="message-input" id="message-input" placeholder="Message TwiskGPT Pro..." rows="1" maxlength="8000"></textarea>
+                        <div class="input-actions">
+                            <button class="input-btn attachment-btn" onclick="handleAttachment()" title="Attach File">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="input-btn send-btn" id="send-btn" onclick="sendMessage()" title="Send Message">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Global State
+        let appState = {
+            isAuthenticated: false,
+            currentUser: null,
+            currentMode: 'creative',
+            currentLanguage: 'en',
+            currentTheme: 'light',
+            messageCount: 0,
+            maxMessages: 500,
+            userRequestCount: 0,
+            maxUserRequests: 500,
+            isTyping: false,
+            chatHistory: []
+        };
+
+        // Rate Limiting System
+        class RateLimiter {
+            constructor() {
+                this.requests = JSON.parse(localStorage.getItem('twiskgpt_requests') || '{}');
+                this.cleanOldRequests();
+            }
+
+            cleanOldRequests() {
+                const now = Date.now();
+                const oneHour = 60 * 60 * 1000;
+                
+                for (const userId in this.requests) {
+                    this.requests[userId] = this.requests[userId].filter(
+                        timestamp => now - timestamp < oneHour
+                    );
+                    if (this.requests[userId].length === 0) {
+                        delete this.requests[userId];
+                    }
+                }
+                this.saveRequests();
+            }
+
+            canMakeRequest(userId = 'anonymous') {
+                const userRequests = this.requests[userId] || [];
+                return userRequests.length < appState.maxUserRequests;
+            }
+
+            addRequest(userId = 'anonymous') {
+                if (!this.requests[userId]) {
+                    this.requests[userId] = [];
+                }
+                this.requests[userId].push(Date.now());
+                this.saveRequests();
+                this.updateRateLimitUI(userId);
+            }
+
+            getRequestCount(userId = 'anonymous') {
+                return (this.requests[userId] || []).length;
+            }
+
+            saveRequests() {
+                localStorage.setItem('twiskgpt_requests', JSON.stringify(this.requests));
+            }
+
+            updateRateLimitUI(userId = 'anonymous') {
+                const count = this.getRequestCount(userId);
+                const indicator = document.getElementById('rate-limit-indicator');
+                const text = document.getElementById('rate-limit-text');
+                const progress = document.getElementById('rate-limit-progress');
+                
+                text.textContent = `Requests: ${count}/${appState.maxUserRequests}`;
+                progress.style.width = `${(count / appState.maxUserRequests) * 100}%`;
+                
+                if (count >= appState.maxUserRequests * 0.9) {
+                    indicator.classList.add('rate-limit-warning');
+                } else {
+                    indicator.classList.remove('rate-limit-warning');
+                }
+            }
+        }
+
+        const rateLimiter = new RateLimiter();
+
+        // Language Support
+        const languages = {
+            en: {
+                name: 'English',
+                welcomeTitle: 'Hello, I\'m TwiskGPT Pro',
+                welcomeSubtitle: 'Advanced AI assistant powered by Tw1sk API with multiple specialized modes and multilingual support.',
+                placeholder: 'Message TwiskGPT Pro...',
+                rateLimitReached: 'Rate limit reached! Please wait before sending another message.',
+                modes: {
+                    creative: 'Write a story, poem, or creative piece...',
+                    analytical: 'Ask for data analysis or research help...',
+                    coding: 'Need help with programming or debugging?...',
+                    study: 'Ask me to explain concepts or help you learn...'
+                }
+            },
+            es: {
+                name: 'Español',
+                welcomeTitle: 'Hola, soy TwiskGPT Pro',
+                welcomeSubtitle: 'Asistente de IA avanzado impulsado por Tw1sk API con múltiples modos especializados y soporte multilingüe.',
+                placeholder: 'Envía un mensaje a TwiskGPT Pro...',
+                rateLimitReached: '¡Límite de velocidad alcanzado! Espera antes de enviar otro mensaje.',
+                modes: {
+                    creative: 'Escribe una historia, poema o pieza creativa...',
+                    analytical: 'Pide ayuda con análisis de datos o investigación...',
+                    coding: '¿Necesitas ayuda con programación o depuración?...',
+                    study: 'Pídeme que explique conceptos o te ayude a aprender...'
+                }
+            },
+            fr: {
+                name: 'Français',
+                welcomeTitle: 'Bonjour, je suis TwiskGPT Pro',
+                welcomeSubtitle: 'Assistant IA avancé alimenté par l\'API Tw1sk avec plusieurs modes spécialisés et support multilingue.',
+                placeholder: 'Message à TwiskGPT Pro...',
+                rateLimitReached: 'Limite de débit atteinte ! Veuillez attendre avant d\'envoyer un autre message.',
+                modes: {
+                    creative: 'Écrivez une histoire, un poème ou une pièce créative...',
+                    analytical: 'Demandez de l\'aide pour l\'analyse de données ou la recherche...',
+                    coding: 'Besoin d\'aide avec la programmation ou le débogage ?...',
+                    study: 'Demandez-moi d\'expliquer des concepts ou de vous aider à apprendre...'
+                }
+            },
+            de: {
+                name: 'Deutsch',
+                welcomeTitle: 'Hallo, ich bin TwiskGPT Pro',
+                welcomeSubtitle: 'Fortgeschrittener KI-Assistent mit Tw1sk API mit mehreren spezialisierten Modi und mehrsprachiger Unterstützung.',
+                placeholder: 'Nachricht an TwiskGPT Pro...',
+                rateLimitReached: 'Ratenlimit erreicht! Bitte warten Sie, bevor Sie eine weitere Nachricht senden.',
+                modes: {
+                    creative: 'Schreiben Sie eine Geschichte, ein Gedicht oder ein kreatives Stück...',
+                    analytical: 'Bitten Sie um Hilfe bei Datenanalyse oder Forschung...',
+                    coding: 'Benötigen Sie Hilfe beim Programmieren oder Debuggen?...',
+                    study: 'Bitten Sie mich, Konzepte zu erklären oder Ihnen beim Lernen zu helfen...'
+                }
+            },
+            vi: {
+                name: 'Tiếng Việt',
+                welcomeTitle: 'Xin chào, tôi là TwiskGPT Pro',
+                welcomeSubtitle: 'Trợ lý AI tiên tiến được hỗ trợ bởi Twisk API với nhiều chế độ chuyên biệt và hỗ trợ đa ngôn ngữ.',
+                placeholder: 'Gửi tin nhắn đến TwiskGPT Pro...',
+                rateLimitReached: 'Đã đạt giới hạn tốc độ! Vui lòng đợi trước khi gửi tin nhắn khác.',
+                modes: {
+                    creative: 'Viết một câu chuyện, bài thơ hoặc tác phẩm sáng tạo...',
+                    analytical: 'Hỏi về phân tích dữ liệu hoặc trợ giúp nghiên cứu...',
+                    coding: 'Cần trợ giúp về lập trình hoặc gỡ lỗi?...',
+                    study: 'Yêu cầu tôi giải thích các khái niệm hoặc giúp bạn học...'
+                }
+            }
+        };
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            showWelcomeMessage();
+        });
+
+        function initializeApp() {
+            const savedUser = JSON.parse(localStorage.getItem('twiskgpt_user') || 'null');
+            const savedTheme = localStorage.getItem('twiskgpt_theme') || 'light';
+            const savedLanguage = localStorage.getItem('twiskgpt_language') || 'en';
+
+            if (savedUser) {
+                appState.isAuthenticated = true;
+                appState.currentUser = savedUser;
+                updateUIForAuthenticatedUser();
+            }
+
+            appState.currentTheme = savedTheme;
+            document.body.setAttribute('data-theme', savedTheme);
+            updateThemeUI();
+
+            appState.currentLanguage = savedLanguage;
+            document.getElementById('language-select').value = savedLanguage;
+            updateLanguageUI();
+
+            rateLimiter.updateRateLimitUI(appState.currentUser?.email || 'anonymous');
+
+            if (!appState.isAuthenticated) {
+                setTimeout(() => showAuth(), 1000);
+            }
+        }
+
+        function setupEventListeners() {
+            const messageInput = document.getElementById('message-input');
+            messageInput.addEventListener('input', autoResizeTextarea);
+            messageInput.addEventListener('keydown', handleKeyDown);
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => selectMode(btn.dataset.mode));
+            });
+
+            document.getElementById('language-select').addEventListener('change', handleLanguageChange);
+            document.getElementById('auth-form').addEventListener('submit', handleAuth);
+            document.getElementById('auth-switch-btn').addEventListener('click', toggleAuthMode);
+        }
+
+        // Authentication
+        function showAuth() {
+            document.getElementById('auth-overlay').classList.add('active');
+        }
+
+        function hideAuth() {
+            document.getElementById('auth-overlay').classList.remove('active');
+        }
+
+        function toggleAuthMode() {
+            const title = document.getElementById('auth-title');
+            const subtitle = document.getElementById('auth-subtitle');
+            const submitBtn = document.getElementById('auth-submit');
+            const switchText = document.getElementById('auth-switch-text');
+            const switchBtn = document.getElementById('auth-switch-btn');
+            const nameGroup = document.getElementById('name-group');
+            const isSignIn = submitBtn.textContent === 'Sign In';
+
+            if (isSignIn) {
+                title.textContent = 'Create Your Account';
+                subtitle.textContent = 'Join TwiskGPT Pro for advanced features';
+                submitBtn.textContent = 'Sign Up';
+                switchText.textContent = 'Already have an account?';
+                switchBtn.textContent = 'Sign In';
+                nameGroup.style.display = 'block';
+            } else {
+                title.textContent = 'Welcome Back';
+                subtitle.textContent = 'Sign in to access your account';
+                submitBtn.textContent = 'Sign In';
+                switchText.textContent = 'Don\'t have an account?';
+                switchBtn.textContent = 'Sign Up';
+                nameGroup.style.display = 'none';
+            }
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const password = document.getElementById('password-input').value;
+            const name = document.getElementById('name-input').value;
+            const isSignUp = document.getElementById('auth-submit').textContent === 'Sign Up';
+
+            if (!email || !password || (isSignUp && !name)) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            const userData = {
+                name: isSignUp ? name : email.split('@')[0],
+                email: email,
+                plan: 'Free Plan',
+                joinDate: new Date().toISOString()
+            };
+
+            appState.isAuthenticated = true;
+            appState.currentUser = userData;
+            localStorage.setItem('twiskgpt_user', JSON.stringify(userData));
+
+            updateUIForAuthenticatedUser();
+            hideAuth();
+            showNotification(`Welcome ${userData.name}! 🎉`, 'success');
+            rateLimiter.updateRateLimitUI(userData.email);
+        }
+
+        function updateUIForAuthenticatedUser() {
+            const userInfo = document.getElementById('user-info');
+            const userName = document.getElementById('user-name');
+            const userAvatar = document.getElementById('user-avatar');
+            const authNav = document.getElementById('auth-nav');
+            const logoutNav = document.getElementById('logout-nav');
+
+            if (appState.currentUser) {
+                userInfo.style.display = 'flex';
+                userName.textContent = appState.currentUser.name;
+                userAvatar.textContent = appState.currentUser.name[0].toUpperCase();
+                authNav.style.display = 'none';
+                logoutNav.style.display = 'flex';
+            }
+        }
+
+        function logout() {
+            appState.isAuthenticated = false;
+            appState.currentUser = null;
+            localStorage.removeItem('twiskgpt_user');
+
+            const userInfo = document.getElementById('user-info');
+            const authNav = document.getElementById('auth-nav');
+            const logoutNav = document.getElementById('logout-nav');
+
+            userInfo.style.display = 'none';
+            authNav.style.display = 'flex';
+            logoutNav.style.display = 'none';
+
+            showNotification('Signed out successfully', 'success');
+            rateLimiter.updateRateLimitUI('anonymous');
+            startNewChat();
+        }
+
+        // Language Management
+        function handleLanguageChange() {
+            const selectedLanguage = document.getElementById('language-select').value;
+            appState.currentLanguage = selectedLanguage;
+            localStorage.setItem('twiskgpt_language', selectedLanguage);
+            updateLanguageUI();
+            showNotification(`Language changed to ${languages[selectedLanguage].name}`, 'success');
+        }
+
+        function updateLanguageUI() {
+            const lang = languages[appState.currentLanguage];
+            const input = document.getElementById('message-input');
+            
+            if (appState.currentMode && lang.modes[appState.currentMode]) {
+                input.placeholder = lang.modes[appState.currentMode];
+            } else {
+                input.placeholder = lang.placeholder;
+            }
+        }
+
+        // Theme Management
+        function toggleTheme() {
+            appState.currentTheme = appState.currentTheme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', appState.currentTheme);
+            localStorage.setItem('twiskgpt_theme', appState.currentTheme);
+            updateThemeUI();
+            showNotification(`Switched to ${appState.currentTheme} mode`, 'success');
+        }
+
+        function updateThemeUI() {
+            const themeIcon = document.getElementById('theme-icon');
+            const themeText = document.getElementById('theme-text');
+            if (appState.currentTheme === 'dark') {
+                themeIcon.className = 'fas fa-sun';
+                themeText.textContent = 'Light Mode';
+            } else {
+                themeIcon.className = 'fas fa-moon';
+                themeText.textContent = 'Dark Mode';
+            }
+        }
+
+        // Mode Selection
+        function selectMode(mode) {
+            appState.currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+            updateLanguageUI();
+            showNotification(`Switched to ${mode} mode`, 'success');
+        }
+
+        // Mobile Sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        // Input Handling
+        function autoResizeTextarea() {
+            const textarea = document.getElementById('message-input');
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Chat Management
+        function startNewChat() {
+            const lang = languages[appState.currentLanguage];
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.innerHTML = `
+                <div class="welcome-screen">
+                    <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=80&h=80&fit=crop&crop=smart" alt="TwiskGPT" class="welcome-logo">
+                    <h1 class="welcome-title">${lang.welcomeTitle}</h1>
+                    <p class="welcome-subtitle">${lang.welcomeSubtitle}</p>
+                    <div class="welcome-features">
+                        <div class="feature-card">
+                            <div class="feature-icon">🎨</div>
+                            <div class="feature-title">Creative Mode</div>
+                            <div class="feature-desc">Stories, poems, creative writing, and artistic ideas</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-title">Analytical Mode</div>
+                            <div class="feature-desc">Data analysis, research, and logical reasoning</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">💻</div>
+                            <div class="feature-title">Coding Mode</div>
+                            <div class="feature-desc">Programming help, debugging, and code review</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📚</div>
+                            <div class="feature-title">Study Mode</div>
+                            <div class="feature-desc">Learning assistance, explanations, and tutoring</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🌍</div>
+                            <div class="feature-title">Multilingual</div>
+                            <div class="feature-desc">Support for 13+ languages with native understanding</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">⚡</div>
+                            <div class="feature-title">TW1SK Powered</div>
+                            <div class="feature-desc">Lightning-fast responses with advanced AI models</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            appState.messageCount = 0;
+            appState.chatHistory = [];
+            document.getElementById('message-input').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+            showNotification('New chat started ✨', 'success');
+        }
+
+        function clearChat() {
+            if (confirm('Are you sure you want to clear this chat?')) {
+                startNewChat();
+            }
+        }
+
+        function exportChat() {
+            if (appState.chatHistory.length === 0) {
+                showNotification('No messages to export', 'error');
+                return;
+            }
+
+            const chatData = {
+                timestamp: new Date().toISOString(),
+                mode: appState.currentMode,
+                language: appState.currentLanguage,
+                messages: appState.chatHistory
+            };
+
+            const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `twiskgpt-chat-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Chat exported successfully', 'success');
+        }
+
+        function shareChat() {
+            if (navigator.share && appState.chatHistory.length > 0) {
+                const lastMessage = appState.chatHistory[appState.chatHistory.length - 1];
+                navigator.share({
+                    title: 'TwiskGPT Chat',
+                    text: lastMessage.content.substring(0, 100) + '...',
+                    url: window.location.href
+                });
+            } else {
+                showNotification('Sharing not supported', 'error');
+            }
+        }
+
+        // Utility: escape HTML to avoid XSS
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Message Functions
+        function addMessage(content, isUser = false, mode = null) {
+            const chatContainer = document.getElementById('chat-container');
+            const welcomeScreen = document.getElementById('welcome-screen');
+            
+            if (welcomeScreen) {
+                welcomeScreen.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const safeContent = escapeHtml(content);
+
+            if (isUser) {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${safeContent}
+                        <div class="message-time">${timestamp}</div>
+                    </div>
+                    <div class="message-avatar">${appState.currentUser ? appState.currentUser.name[0].toUpperCase() : 'U'}</div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=44&h=44&fit=crop&crop=smart" alt="TwiskGPT" class="message-avatar">
+                    <div class="message-content">
+                        ${safeContent}
+                        <div class="message-time">${timestamp}</div>
+                    </div>
+                `;
+            }
+
+            const recordContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            appState.chatHistory.push({
+                content: recordContent,
+                isUser,
+                timestamp: new Date().toISOString(),
+                mode: mode || appState.currentMode,
+                language: appState.currentLanguage
+            });
+        }
+
+        function addTypingIndicator() {
+            const chatContainer = document.getElementById('chat-container');
+            const welcomeScreen = document.getElementById('welcome-screen');
+            
+            if (welcomeScreen) {
+                welcomeScreen.remove();
+            }
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=44&h=44&fit=crop&crop=smart" alt="TwiskGPT" class="message-avatar">
+                <div class="typing-content">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function checkRateLimit() {
+            const userId = appState.currentUser?.email || 'anonymous';
+            if (!rateLimiter.canMakeRequest(userId)) {
+                const lang = languages[appState.currentLanguage];
+                showNotification(lang.rateLimitReached, 'error');
+                return true;
+            }
+            return false;
+        }
+
+        // Send Message
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message || appState.isTyping) return;
+            
+            if (checkRateLimit()) return;
+
+            // Close mobile sidebar if open
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+            }
+
+            addMessage(message, true, appState.currentMode);
+            input.value = '';
+            input.style.height = 'auto';
+
+            const userId = appState.currentUser?.email || 'anonymous';
+            rateLimiter.addRequest(userId);
+
+            appState.isTyping = true;
+            document.getElementById('send-btn').disabled = true;
+            addTypingIndicator();
+
+            try {
+                const response = await callGroqAPI(message);
+                removeTypingIndicator();
+                addMessage(response, false, appState.currentMode);
+            } catch (error) {
+                removeTypingIndicator();
+                
+                let errorMessage = 'I apologize, but I encountered an error processing your request. ';
+                if (error.message.includes('API key')) {
+                    errorMessage += 'Please check the Tw1sk API key configuration. 🔑';
+                } else if (error.message.includes('rate limit')) {
+                    errorMessage += 'Too many requests. Please wait a moment before trying again. ⏱️';
+                } else if (error.message.includes('quota')) {
+                    errorMessage += 'API quota exceeded. Please try again later. 📊';
+                } else {
+                    errorMessage += 'Please try again later. 😔';
+                }
+                
+                addMessage(errorMessage, false);
+                console.error('Tw1sk API Error:', error);
+            }
+
+            appState.isTyping = false;
+            document.getElementById('send-btn').disabled = false;
+        }
+
+        // Groq API Integration via backend proxy
+        async function callGroqAPI(message) {
+            const API_URL = '/api/chat';
+
+            // Best Groq models for different languages and use cases
+            const models = {
+                'creative': 'llama3-8b-8192',
+                'analytical': 'llama3-70b-8192',
+                'coding': 'llama3-70b-8192',
+                'study': 'llama3-8b-8192'
+            };
+
+            const model = models[appState.currentMode] || 'llama3-8b-8192';
+
+            const modePrompts = {
+                creative: `You are TwiskGPT Pro in Creative Mode. Focus on imaginative, artistic, and creative responses. Help with storytelling, creative writing, poetry, brainstorming creative ideas, and artistic projects. Be expressive and inspiring. Always respond in ${languages[appState.currentLanguage].name} language.`,
+                analytical: `You are TwiskGPT Pro in Analytical Mode. Provide logical, data-driven, and research-focused responses. Help with analysis, critical thinking, problem-solving, and evidence-based reasoning. Be precise and thorough. Always respond in ${languages[appState.currentLanguage].name} language.`,
+                coding: `You are TwiskGPT Pro in Coding Mode. Focus on programming, software development, debugging, code review, and technical problem-solving. Provide clean, efficient code examples and detailed technical explanations. Always respond in ${languages[appState.currentLanguage].name} language, but keep code comments and variable names in English for universal understanding.`,
+                study: `You are TwiskGPT Pro in Study Mode. Act as a helpful tutor and learning assistant. Break down complex topics, provide clear explanations, create study materials, and help with understanding concepts across various subjects. Always respond in ${languages[appState.currentLanguage].name} language.`
+            };
+
+            const systemPrompt = `${modePrompts[appState.currentMode]} 
+
+            Key instructions:
+            - You are TwiskGPT Pro, developed by tw1sk
+            - Powered by TW1SK API for lightning-fast responses
+            - Always be helpful, friendly, and knowledgeable
+            - Respond naturally in ${languages[appState.currentLanguage].name}
+            - Keep responses concise but informative
+            - Use appropriate formatting with markdown when helpful`;
+
+            const messages = [
+                { role: 'system', content: systemPrompt }
+            ];
+
+            const recentHistory = appState.chatHistory.slice(-6);
+            recentHistory.forEach(msg => {
+                messages.push({
+                    role: msg.isUser ? 'user' : 'assistant',
+                    content: msg.content
+                });
+            });
+
+            messages.push({ role: 'user', content: message });
+
+            const requestBody = {
+                model: model,
+                messages: messages,
+                max_tokens: 1024,
+                temperature: appState.currentMode === 'creative' ? 0.9 : 0.7,
+                top_p: 0.95,
+                stream: false
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Invalid API key. Please check your TW1SK API key.');
+                    } else if (response.status === 429) {
+                        throw new Error('Rate limit exceeded. Please wait before sending another message.');
+                    } else if (response.status === 402) {
+                        throw new Error('API quota exceeded. Please check your TW1SK account.');
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    return data.choices[0].message.content.trim();
+                } else {
+                    throw new Error('Unexpected response format from TW1SK API');
+                }
+
+            } catch (error) {
+                console.error('TW1SK API Error:', error);
+                
+                const lang = languages[appState.currentLanguage];
+                const fallbackResponses = {
+                    en: {
+                        creative: "I'm having trouble connecting to my creative circuits right now. Could you try asking me to write something creative again? ✨",
+                        analytical: "I'm experiencing some analytical difficulties at the moment. Please try your question again and I'll help you analyze it. 📊",
+                        coding: "My coding modules are temporarily unavailable. Please try your programming question again. 💻",
+                        study: "I'm having trouble accessing my knowledge base right now. Could you ask your study question again? 📚"
+                    },
+                    es: {
+                        creative: "Tengo problemas para conectar con mis circuitos creativos ahora. ¿Podrías intentar pedirme que escriba algo creativo de nuevo? ✨",
+                        analytical: "Estoy experimentando algunas dificultades analíticas en este momento. Intenta tu pregunta de nuevo y te ayudaré a analizarla. 📊",
+                        coding: "Mis módulos de codificación están temporalmente no disponibles. Intenta tu pregunta de programación de nuevo. 💻",
+                        study: "Tengo problemas para acceder a mi base de conocimientos ahora. ¿Podrías hacer tu pregunta de estudio de nuevo? 📚"
+                    },
+                    fr: {
+                        creative: "J'ai du mal à me connecter à mes circuits créatifs en ce moment. Pourriez-vous essayer de me demander d'écrire quelque chose de créatif à nouveau ? ✨",
+                        analytical: "Je rencontre quelques difficultés analytiques en ce moment. Veuillez réessayer votre question et je vous aiderai à l'analyser. 📊",
+                        coding: "Mes modules de codage sont temporairement indisponibles. Veuillez réessayer votre question de programmation. 💻",
+                        study: "J'ai du mal à accéder à ma base de connaissances en ce moment. Pourriez-vous poser votre question d'étude à nouveau ? 📚"
+                    },
+                    vi: {
+                        creative: "Tôi đang gặp khó khăn trong việc kết nối với các mạch sáng tạo của mình ngay bây giờ. Bạn có thể thử yêu cầu tôi viết một cái gì đó sáng tạo một lần nữa không? ✨",
+                        analytical: "Tôi đang gặp một số khó khăn phân tích vào lúc này. Vui lòng thử lại câu hỏi của bạn và tôi sẽ giúp bạn phân tích nó. 📊",
+                        coding: "Các module lập trình của tôi tạm thời không khả dụng. Vui lòng thử lại câu hỏi lập trình của bạn. 💻",
+                        study: "Tôi đang gặp khó khăn trong việc truy cập cơ sở kiến thức của mình ngay bây giờ. Bạn có thể đặt câu hỏi học tập của mình một lần nữa không? 📚"
+                    }
+                };
+
+                const currentLangFallbacks = fallbackResponses[appState.currentLanguage] || fallbackResponses['en'];
+                return currentLangFallbacks[appState.currentMode] || currentLangFallbacks['creative'];
+            }
+        }
+
+        // Utility Functions
+        function handleAttachment() {
+            showNotification('File attachment feature coming soon! 📎', 'success');
+        }
+
+        function showSettings() {
+            showNotification('Settings panel coming in next update! ⚙️', 'success');
+        }
+
+        function showNotification(message, type = 'default') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        function showWelcomeMessage() {
+            setTimeout(() => {
+                showNotification('🚀 TwiskGPT Pro is ready! Powered by TW1SK API for lightning-fast responses.', 'success');
+            }, 1500);
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                sendMessage();
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                startNewChat();
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+                e.preventDefault();
+                toggleTheme();
+            }
+            
+            if (e.key === 'Escape') {
+                hideAuth();
+                if (document.getElementById('sidebar').classList.contains('open')) {
+                    toggleSidebar();
+                }
+            }
+        });
+
+        // Auto-save functionality
+        setInterval(() => {
+            if (appState.chatHistory.length > 0) {
+                localStorage.setItem('twiskgpt_chat_backup', JSON.stringify({
+                    history: appState.chatHistory,
+                    mode: appState.currentMode,
+                    language: appState.currentLanguage,
+                    timestamp: new Date().toISOString()
+                }));
+            }
+        }, 30000);
+
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                const loadTime = performance.now();
+                console.log(`%cTwiskGPT Pro loaded in ${loadTime.toFixed(2)}ms`, 'color: #43e97b; font-weight: bold;');
+                console.log('%cPowered by TW1SK API 🚀', 'color: #667eea; font-weight: bold;');
+                console.log('%cDeveloped by tw1sk', 'color: #764ba2; font-weight: 600;');
+            }, 0);
+        });
+
+        // System theme detection
+        if (!localStorage.getItem('twiskgpt_theme')) {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+                appState.currentTheme = 'dark';
+                document.body.setAttribute('data-theme', 'dark');
+                updateThemeUI();
+            }
+        }
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('twiskgpt_theme')) {
+                appState.currentTheme = e.matches ? 'dark' : 'light';
+                document.body.setAttribute('data-theme', appState.currentTheme);
+                updateThemeUI();
+            }
+        });
+
+        // Mobile optimizations
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(event) {
+                const now = (new Date()).getTime();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+
+            document.body.style.webkitTouchCallout = 'none';
+            document.body.style.webkitUserSelect = 'none';
+
+            showWelcomeMessage = function() {
+                setTimeout(() => {
+                    showNotification('📱 Mobile optimized! TW1SK-powered responses ready.', 'success');
+                }, 1500);
+            };
+        }
+
+        // Clean up old requests periodically
+        setInterval(() => {
+            rateLimiter.cleanOldRequests();
+        }, 5 * 60 * 1000); // Every 5 minutes
+    </script>
+</body>
+</html>
